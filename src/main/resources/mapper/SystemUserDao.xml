@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ren.dao.SystemUserMapper">
+	<sql id="userColumns">
+		id,photo,user_name,true_name,login_time,login_ip,error_num,error_time,login_num,role_id,phone
+	</sql>
+	
+	<!-- 规则分页、排序、搜索 -->
+	<resultMap type="com.ren.entity.SystemUser" id="userPageList">
+		<result column="id" property="id"/>
+		<result column="true_name" property="trueName"/>
+		<result column="user_name" property="userName"/>
+		<result column="phone" property="phone"/>
+		<result column="photo" property="photo"/>
+		<association property="role" javaType="com.ren.entity.SystemRole">
+            <result property="id" column="roleId"/>
+            <result property="name" column="roleName"/>
+        </association>
+	</resultMap>
+	
+	<select id="queryUserPage" resultMap="userPageList">
+		select a.id,a.true_name,a.user_name,a.phone,a.photo,b.id as roleId,b.name as roleName from system_user as a,system_role as b where a.role_id = b.id
+		<if test="search != ''">and a.user_name like CONCAT('%',#{search},'%')</if>
+		order by
+		<if test="name == 'userName'">a.user_name</if>
+		<if test="name == 'trueName'">a.true_name</if>
+		<if test="name == 'role.name'">b.name</if>
+		<if test="name != 'trueName' and name != 'userName' and name != 'role.name'">a.${name}</if>
+		${orderBy} limit #{start},#{length}
+	</select>
+	<!-- 搜索条数 -->
+	<select id="countSearch" resultType="int">
+		select count(*) from system_user
+		<if test="search != ''">where user_name like CONCAT('%',#{search},'%')</if>
+	</select>
+	<!-- 全部数量 -->
+	<select id="countAll" resultType="int">
+		select count(*) from system_user
+	</select>
+	<!-- 管理员更新用户信息 -->
+	<update id="updateUserFromAdmin" parameterType="com.ren.entity.SystemUser">
+		update system_user set true_name = #{trueName},phone = #{phone},role_id = #{roleId}
+		<if test="password != null and password != ''">,password = #{password}</if> where id = #{id}
+	</update>
+	
+	<!-- 添加用户信息 -->
+	<insert id="addUser" parameterType="com.ren.entity.SystemUser" useGeneratedKeys="true" keyProperty="id">
+		insert into system_user (true_name,user_name,password,role_id,phone)
+		values('${trueName}','${userName}','${password}','${roleId}','${phone}')
+	</insert>
+	<!-- 根据id查询 -->
+	<select id="queryById" resultType="SystemUser">
+		SELECT <include refid="userColumns" /> FROM system_user WHERE id = #{id}
+	</select>
+	<!-- 用户名、密码查询用户信息 -->
+	<select id="queryByNameAndPassword" resultType="SystemUser">
+		SELECT <include refid="userColumns" /> FROM system_user where user_name = #{name} and password = #{password}
+	</select>
+	<!-- 用户名查询用户信息 -->
+	<select id="queryByUserName" resultType="SystemUser">
+		SELECT <include refid="userColumns" /> FROM system_user WHERE user_name = #{userName}
+	</select>
+	<!-- 登录成功更新用户信息 -->
+	<update id="updateUserLoginSuccessInfo">
+		UPDATE system_user SET login_time = #{loginTime}, login_ip = #{loginIp},error_num = 0,login_num = login_num + 1 WHERE id = #{id}
+	</update>
+	<!-- 登录失败更新用户信息 -->
+	<update id="updateUserLoginErrorInfo">
+		UPDATE system_user SET error_time = #{errorTime}, error_num = error_num + 1 WHERE id = #{id}
+	</update>
+	<!-- 更新用户头像 -->
+	<update id="updateUsePhoto">
+		UPDATE system_user SET photo = #{photo} WHERE id = #{id}
+	</update>
+	<!-- 更新用户信息 -->
+	<update id="updateUseInfo">
+		UPDATE system_user SET true_name = #{trueName},phone = #{phone}
+		<if test = "password != ''">
+		,password = #{password}
+		</if>
+		WHERE id = #{id}
+	</update>
+	<!-- 删除用户信息 -->
+	<delete id="deleteById">
+		delete from system_user where id = #{id}
+	</delete>
+	
+</mapper>

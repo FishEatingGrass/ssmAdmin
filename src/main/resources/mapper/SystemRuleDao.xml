@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ren.dao.SystemRuleMapper">
+	<sql id="rule">id,name,url,group_id,remark</sql>
+	<!-- 根据id集合获取规则列表 -->
+	<select id="ruleListByIds" resultMap="ruleAllList">
+		select * from system_rule where id in (${ids})
+	</select>
+	
+	<!-- 根据id获取 -->
+	<select id="queryById" resultType="SystemRule">
+		select <include refid="rule"></include> from system_rule where id = #{id}
+	</select>
+	
+	<!-- 根据分组id获取规则 -->
+	<resultMap type="com.ren.entity.SystemRule" id="ruleAllList">
+		<result column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="url" property="url"/>
+		<result column="remark" property="remark"/>
+		<result column="group_id" property="groupId"/>
+	</resultMap>
+	
+	<select id="queryByGroupId" resultMap="ruleAllList">
+		select <include refid="rule"></include> from system_rule where group_id = #{groupId}
+	</select>
+	<!-- 规则分页、排序、搜索 -->
+	<resultMap type="com.ren.entity.SystemRule" id="rulePageList">
+		<result column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="url" property="url"/>
+		<result column="remark" property="remark"/>
+		<result column="group_id" property="groupId"/>
+		<association property="group" javaType="com.ren.entity.SystemRuleGroup">
+            <result property="id" column="id"/>
+            <result property="name" column="gName"/>
+        </association>
+	</resultMap>
+	
+	<select id="queryRulePage" resultMap="rulePageList">
+		select a.id,a.name,a.url,a.group_id,a.remark,b.name as gName from system_rule as a,system_rule_group as b where a.group_id = b.id
+		<if test="search != ''">and a.name like CONCAT('%',#{search},'%')</if>
+		order by <if test="name == 'group.name'">b.name</if><if test="name != 'group.name'">a.${name}</if> ${orderBy} limit #{start},#{length}
+	</select>
+	<!-- 搜索条数 -->
+	<select id="countSearch" resultType="int">
+		select count(*) from system_rule
+		<if test="search != ''">where name like CONCAT('%',#{search},'%')</if>
+	</select>
+	<!-- 全部数量 -->
+	<select id="countAll" resultType="int">
+		select count(*) from system_rule
+	</select>
+	<!-- 添加规则 -->
+	<insert id="addRule" parameterType="com.ren.entity.SystemRule" useGeneratedKeys="true" keyProperty="id">
+		insert into system_rule(name,url,group_id,remark) values('${name}','${url}',${groupId},'${remark}')
+	</insert>
+	<!-- 根据id更新规则 -->
+	<update id="updateById" parameterType="com.ren.entity.SystemRule">
+		update system_rule set name = #{SystemRule.name},url = #{SystemRule.url},group_id = #{SystemRule.groupId},remark = #{SystemRule.remark} where id = #{id}
+	</update>
+	<!-- 根据id删除规则 -->
+	<delete id="deleteById" >
+		delete from system_rule where id = #{id}
+	</delete>
+	
+</mapper>
